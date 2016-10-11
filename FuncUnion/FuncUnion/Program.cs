@@ -11,8 +11,8 @@ namespace FuncUnion
 {
     class Program
     {
-        [ImportMany(typeof(FunctionInterface))]
-        IEnumerable<Lazy<FunctionInterface, MetaDataInterface>> _stateRules;
+        [ImportMany(typeof(IFunction))]
+        IEnumerable<Lazy<IFunction, IMetaData>> _stateRules;
 
         static void Main(string[] args)
         {

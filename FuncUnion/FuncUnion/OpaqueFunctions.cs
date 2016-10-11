@@ -11,8 +11,8 @@ namespace OpaqueFunctions
 {
     [Export(typeof(Opaque1SinCos))]
     [ExportMetadata("FuncName", "sin^2 + cos^2 = 1")]
-    [ExportMetadata("EquivalentIntConstant", 1)]
-    public class Opaque1SinCos : FunctionInterface
+    [ExportMetadata("EquivalentArithmeticExpr", "1")]
+    public class Opaque1SinCos : IFunction
     {
         public double Body(double angle, int count)
         {

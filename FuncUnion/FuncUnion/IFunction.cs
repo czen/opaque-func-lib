@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace FuncUnion
 {
-    public interface MetaDataInterface
+    interface IFunction
     {
-        string FuncName { get; }
-        int EquivalentIntConstant { get; }
+        double Body(double angle, int count);
     }
 }
