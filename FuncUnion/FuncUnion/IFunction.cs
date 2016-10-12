@@ -8,6 +8,6 @@ namespace FuncUnion
 {
     interface IFunction
     {
-        double Body(double angle, int count);
+        double Body(IEnumerable<double> args);
     }
 }
