@@ -19,9 +19,13 @@ namespace OpaqueFunctions
     /// <param name="angle">Угол в радианах</param>
     /// <param name="count">Количество требуемых перемножений</param>
     /// <returns>1</returns>
-    [Export(typeof(TrigonometricIdentity))]
+    [Export(typeof(IFunction))]
     [ExportMetadata("FuncName", "sin^2 + cos^2 = 1")]
     [ExportMetadata("EquivalentArithmeticExpr", "1")]
+    [ExportMetadata("ArgMinValue", 1, IsMultiple = true)]
+    [ExportMetadata("ArgMaxValue", int.MaxValue, IsMultiple = true)]
+    [ExportMetadata("ArgIsInput", false, IsMultiple = true)]
+    [ExportMetadata("ArgType", typeof(int), IsMultiple = true)]
     public class TrigonometricIdentity : IFunction
     {
         public double Body(IEnumerable<double> args)
@@ -36,6 +40,8 @@ namespace OpaqueFunctions
             }
             return X;
         }
+
+
     }
 
     /// <summary>
@@ -43,9 +49,13 @@ namespace OpaqueFunctions
     /// </summary>
     /// <param name="angle">Угол в радианах</param>
     /// <returns>0</returns>
-    [Export(typeof(TanHibDiff))]
+    [Export(typeof(IFunction))]
     [ExportMetadata("FuncName", "th(2x) – (2*th(x))/( 1 + th(x)*th(x)")]
     [ExportMetadata("EquivalentArithmeticExpr", "0")]
+    [ExportMetadata("ArgMinValue", int.MinValue, IsMultiple = true)]
+    [ExportMetadata("ArgMaxValue", int.MaxValue, IsMultiple = true)]
+    [ExportMetadata("ArgIsInput", false, IsMultiple = true)]
+    [ExportMetadata("ArgType", typeof(double), IsMultiple = true)]
     public class TanHibDiff : IFunction
     {
         public double Body(IEnumerable<double> args)
@@ -65,10 +75,18 @@ namespace OpaqueFunctions
     /// <param name="angle">Угол X в радианах</param>
     /// <param name="angle2">Угол Y в радианах</param>
     /// <returns>0</returns>
-    [Export(typeof(SinCosHib))]
+    [Export(typeof(IFunction))]
     [ExportMetadata("FuncName", "th(2x) – (2*th(x))/( 1 + th(x)*th(x)")]
     [ExportMetadata("EquivalentArithmeticExpr", "0")]
-    public static class SinCosHib : IFunction
+    [ExportMetadata("ArgMinValue", int.MinValue, IsMultiple = true)]
+    [ExportMetadata("ArgMaxValue", int.MaxValue, IsMultiple = true)]
+    [ExportMetadata("ArgIsInput", false, IsMultiple = true)]
+    [ExportMetadata("ArgType", typeof(double), IsMultiple = true)]
+    [ExportMetadata("ArgMinValue", int.MinValue, IsMultiple = true)]
+    [ExportMetadata("ArgMaxValue", int.MaxValue, IsMultiple = true)]
+    [ExportMetadata("ArgIsInput", false, IsMultiple = true)]
+    [ExportMetadata("ArgType", typeof(double), IsMultiple = true)]
+    public class SinCosHib : IFunction
     {
         public double Body(IEnumerable<double> args)
         {

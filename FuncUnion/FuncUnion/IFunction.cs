@@ -9,5 +9,6 @@ namespace FuncUnion
     interface IFunction
     {
         double Body(IEnumerable<double> args);
+        
     }
 }

@@ -11,7 +11,10 @@ namespace FuncUnion
     {
         string FuncName { get; }
         string EquivalentArithmeticExpr { get; }
-        
+        IEnumerable<int> ArgMinValue { get; }
+        IEnumerable<int> ArgMaxValue { get; }
+        IEnumerable<Type> ArgType { get; }
+        IEnumerable<bool> ArgIsInput { get; }
     }
 
     public class ArgumentDescription
