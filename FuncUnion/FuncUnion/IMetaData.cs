@@ -4,32 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FuncUnion
+namespace OpaqueFunctions
 {
 
     public interface IMetaData
     {
         string FuncName { get; }
         string EquivalentArithmeticExpr { get; }
-        IEnumerable<int> ArgMinValue { get; }
-        IEnumerable<int> ArgMaxValue { get; }
-        IEnumerable<Type> ArgType { get; }
-        IEnumerable<bool> ArgIsInput { get; }
     }
 
-    public class ArgumentDescription
-    {
-        public int? MinValue = null;
-        public int? MaxValue = null;
-        public Type ArgType;
-        public bool IsInput = false;
-
-        public ArgumentDescription(Type argType, bool isInput = false, int? minValue = null, int? maxValue = null)
-        {
-            ArgType = argType;
-            MinValue = minValue;
-            MaxValue = maxValue;
-            IsInput = isInput;
-        }
-    }
 }

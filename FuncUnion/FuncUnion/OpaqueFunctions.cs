@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 using System.ComponentModel.Composition;
-using FuncUnion;
 
 namespace OpaqueFunctions
 {
@@ -22,10 +21,6 @@ namespace OpaqueFunctions
     [Export(typeof(IFunction))]
     [ExportMetadata("FuncName", "sin^2 + cos^2 = 1")]
     [ExportMetadata("EquivalentArithmeticExpr", "1")]
-    [ExportMetadata("ArgMinValue", 1, IsMultiple = true)]
-    [ExportMetadata("ArgMaxValue", int.MaxValue, IsMultiple = true)]
-    [ExportMetadata("ArgIsInput", false, IsMultiple = true)]
-    [ExportMetadata("ArgType", typeof(int), IsMultiple = true)]
     public class TrigonometricIdentity : IFunction
     {
         public double Body(IEnumerable<double> args)
@@ -33,15 +28,25 @@ namespace OpaqueFunctions
             double X = 1;
             int count = (int)args.ElementAt(1);
 
+            double angle = args.ElementAt(0);
             for (int i = 0; i < count; i++)
-            {
-                double angle = args.ElementAt(0);
                 X *= Math.Sin(angle) * Math.Sin(angle) + Math.Cos(angle) * Math.Cos(angle);
-            }
+            
             return X;
         }
 
+        public string Function { get; private set; } = @"(angle, count) => 
+        {
+            double X = 1;
+            for (int i = 0; i < count; i++)
+                X *= Math.Sin(angle) * Math.Sin(angle) + Math.Cos(angle) * Math.Cos(angle);
+            return X;
+        }";
 
+        public ArgumentDescription[] Arguments { get; private set; } = 
+            new ArgumentDescription[] { new ArgumentDescription(typeof(double), false),
+                                        new ArgumentDescription(typeof(int), false, 1) };
+        
     }
 
     /// <summary>
@@ -52,10 +57,6 @@ namespace OpaqueFunctions
     [Export(typeof(IFunction))]
     [ExportMetadata("FuncName", "th(2x) – (2*th(x))/( 1 + th(x)*th(x)")]
     [ExportMetadata("EquivalentArithmeticExpr", "0")]
-    [ExportMetadata("ArgMinValue", int.MinValue, IsMultiple = true)]
-    [ExportMetadata("ArgMaxValue", int.MaxValue, IsMultiple = true)]
-    [ExportMetadata("ArgIsInput", false, IsMultiple = true)]
-    [ExportMetadata("ArgType", typeof(double), IsMultiple = true)]
     public class TanHibDiff : IFunction
     {
         public double Body(IEnumerable<double> args)
@@ -67,6 +68,19 @@ namespace OpaqueFunctions
             X = th2X - (2 * thX) / (1 + thX * thX);
             return X;
         }
+
+        public string Function { get; private set; } = @"(angle) => 
+        {
+            double X, thX, th2X;
+            thX = Math.Tanh(angle);
+            th2X = Math.Tanh(2 * angle);
+            X = th2X - (2 * thX) / (1 + thX * thX);
+            return X;
+        }";
+
+        public ArgumentDescription[] Arguments { get; private set; } =
+            new ArgumentDescription[] { new ArgumentDescription(typeof(double), false) };
+
     }
 
     /// <summary>
@@ -78,14 +92,6 @@ namespace OpaqueFunctions
     [Export(typeof(IFunction))]
     [ExportMetadata("FuncName", "th(2x) – (2*th(x))/( 1 + th(x)*th(x)")]
     [ExportMetadata("EquivalentArithmeticExpr", "0")]
-    [ExportMetadata("ArgMinValue", int.MinValue, IsMultiple = true)]
-    [ExportMetadata("ArgMaxValue", int.MaxValue, IsMultiple = true)]
-    [ExportMetadata("ArgIsInput", false, IsMultiple = true)]
-    [ExportMetadata("ArgType", typeof(double), IsMultiple = true)]
-    [ExportMetadata("ArgMinValue", int.MinValue, IsMultiple = true)]
-    [ExportMetadata("ArgMaxValue", int.MaxValue, IsMultiple = true)]
-    [ExportMetadata("ArgIsInput", false, IsMultiple = true)]
-    [ExportMetadata("ArgType", typeof(double), IsMultiple = true)]
     public class SinCosHib : IFunction
     {
         public double Body(IEnumerable<double> args)
@@ -102,10 +108,27 @@ namespace OpaqueFunctions
             X = shX + shY - 2 * shXpY * chXmY;
             return X;
         }
+
+        public string Function { get; private set; } = @"(angle, angle2) => 
+        {
+            double X, shX, shY, shXpY, chXmY;
+
+            shX = Math.Sinh(angle);
+            shY = Math.Sinh(angle2);
+            shXpY = Math.Sinh((angle + angle2) / 2);
+            chXmY = Math.Cosh((angle - angle2) / 2);
+
+            X = shX + shY - 2 * shXpY * chXmY;
+            return X;
+        }";
+
+        public ArgumentDescription[] Arguments { get; private set; } =
+            new ArgumentDescription[] { new ArgumentDescription(typeof(double), false),
+                                        new ArgumentDescription(typeof(double), false) };
     }
-    
 
 
 
-    
+
+
 }
