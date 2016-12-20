@@ -80,6 +80,118 @@ namespace OpaqueFunctions
 			new ArgumentDescription[] { new ArgumentDescription(typeof(double), false) };
 	}
 
+	/// <summary>
+	/// Реализует тригонометрическое тождество ctg(x) * sin(x) / cos(x) = 1,  
+	/// где угол X задается параметром в радианах <paramref name="a"/>. 
+	/// Результатом функции является целое число X - результат умножения левой части тождества само на себя столько раз,
+	/// сколько задано параметром <paramref name="count"/>.
+	/// </summary>
+	/// <param name="a">Угол в радианах</param>
+	/// <param name="count">Количество требуемых перемножений</param>
+	/// <returns>1</returns>
+	[Export(typeof(IFunction))]
+	[ExportMetadata("FuncName", "ctg(x) * sin(x) / cos(x) = 1")]
+	[ExportMetadata("EquivalentArithmeticExpr", "1")]
+	public class CL01_3_1_CtgSinCos : IFunction
+	{
+		public double Body(IEnumerable<double> args)
+		{
+			double angle = args.ElementAt(0);
+			double F, f1, f2, f3;
+			f1 = 1 / Math.Tan(angle);
+			f2 = Math.Sin(angle);
+			f3 = Math.Cos(angle);
+			F = f1 * f2 / f3;
+			return F;
+		}
+
+		public string Function { get; private set; } = @"(angle) => 
+        {
+			double F, f1, f2, f3;
+			f1 = 1 / Math.Tan(angle);
+			f2 = Math.Sin(angle);
+			f3 = Math.Cos(angle);
+			F = f1 * f2 / f3;
+			return F;
+        }";
+
+		public ArgumentDescription[] Arguments { get; private set; } =
+			new ArgumentDescription[] { new ArgumentDescription(typeof(double), false) };
+	}
+
+	/// <summary>
+	/// Реализует тригонометрическое тождество sec(x) * cos(x) = 1,  
+	/// где угол X задается параметром в радианах <paramref name="a"/>. 
+	/// Результатом функции является целое число X - результат умножения левой части тождества само на себя столько раз,
+	/// сколько задано параметром <paramref name="count"/>.
+	/// </summary>
+	/// <param name="a">Угол в радианах</param>
+	/// <param name="count">Количество требуемых перемножений</param>
+	/// <returns>1</returns>
+	[Export(typeof(IFunction))]
+	[ExportMetadata("FuncName", "sec(x) * cos(x) = 1")]
+	[ExportMetadata("EquivalentArithmeticExpr", "1")]
+	public class CL01_4_1_SecCos : IFunction
+	{
+		public double Body(IEnumerable<double> args)
+		{
+			double angle = args.ElementAt(0);
+			double F, f1, f2;
+			f1 = 1 / Math.Cos(angle);
+			f2 = Math.Cos(angle);
+			F = f1 * f2;
+			return F;
+		}
+
+		public string Function { get; private set; } = @"(angle) => 
+        {
+			double F, f1, f2;
+			f1 = 1 / Math.Cos(angle);
+			f2 = Math.Cos(angle);
+			F = f1 * f2;
+			return F;
+        }";
+
+		public ArgumentDescription[] Arguments { get; private set; } =
+			new ArgumentDescription[] { new ArgumentDescription(typeof(double), false) };
+	}
+
+	/// <summary>
+	/// Реализует тригонометрическое тождество cosec(x) * sin(x) = 1,  
+	/// где угол X задается параметром в радианах <paramref name="a"/>. 
+	/// Результатом функции является целое число X - результат умножения левой части тождества само на себя столько раз,
+	/// сколько задано параметром <paramref name="count"/>.
+	/// </summary>
+	/// <param name="a">Угол в радианах</param>
+	/// <param name="count">Количество требуемых перемножений</param>
+	/// <returns>1</returns>
+	[Export(typeof(IFunction))]
+	[ExportMetadata("FuncName", "cosec(x) * sin(x) = 1")]
+	[ExportMetadata("EquivalentArithmeticExpr", "1")]
+	public class CL01_5_1_CosecSin : IFunction
+	{
+		public double Body(IEnumerable<double> args)
+		{
+			double angle = args.ElementAt(0);
+			double F, f1, f2;
+			f1 = 1 / Math.Sin(angle);
+			f2 = Math.Sin(angle);
+			F = f1 * f2;
+			return F;
+		}
+
+		public string Function { get; private set; } = @"(angle) => 
+        {
+			double F, f1, f2;
+			f1 = 1 / Math.Sin(angle);
+			f2 = Math.Sin(angle);
+			F = f1 * f2;
+        }";
+
+		public ArgumentDescription[] Arguments { get; private set; } =
+			new ArgumentDescription[] { new ArgumentDescription(typeof(double), false) };
+	}
+
     /// <summary>
     /// Реализует 86.​ f(x) = th(2x) – (2*th(x))/( 1 + th(x)*th(x))
     /// </summary>
@@ -174,7 +286,7 @@ namespace OpaqueFunctions
 
 	[Export(typeof(IFunction))]
 	[ExportMetadata("FuncName", "ln(x)")]
-	[ExportMetadata("EquivalentArithmeticExpr", "Math.Log(xyz123)")]
+	[ExportMetadata("EquivalentArithmeticExpr", "Math.Log(x)")]
 	public class СMath_9_2_ln : IFunction
 	{
 		public double Body(IEnumerable<double> args)
@@ -208,5 +320,41 @@ namespace OpaqueFunctions
 		public ArgumentDescription[] Arguments { get; private set; } =
 			new ArgumentDescription[] { new ArgumentDescription(typeof(double), true),
 										new ArgumentDescription(typeof(int), false, 1) };
+	}
+
+	/// <summary>
+	/// Реализует сложную функцию  f(x) = tg(arctg(x)), -π/2≤ x ≤ π/2,  
+	/// где угол X задается параметром в радианах <paramref name="angle"/>. 
+	/// Результатом функции является целое число X.
+	/// </summary>
+	/// <param name="angle">Угол в радианах</param>
+	/// <returns>1</returns>
+
+	[Export(typeof(IFunction))]
+	[ExportMetadata("FuncName", "tg(arctg(x))")]
+	[ExportMetadata("EquivalentArithmeticExpr", "Math.Tan(Math.Atan(x))")]
+	public class CLOX_3_1_tg_arctg
+	{
+		public double Body(IEnumerable<double> args)
+		{
+			double angle = args.ElementAt(0);
+			double F = 1;
+			double Y1;
+			Y1 = Math.Atan(angle);
+			F = Math.Tan(Y1);
+			return F;
+		}
+
+		public string Function { get; private set; } = @"(angle, count) => 
+        {
+			double F = 1;
+			double Y1;
+			Y1 = Math.Atan(angle);
+			F = Math.Tan(Y1);
+			return F;
+        }";
+
+		public ArgumentDescription[] Arguments { get; private set; } =
+			new ArgumentDescription[] { new ArgumentDescription(typeof(double), false) };
 	}
 }
