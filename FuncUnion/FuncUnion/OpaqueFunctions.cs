@@ -49,6 +49,37 @@ namespace OpaqueFunctions
         
     }
 
+
+	/// <summary>
+	/// Реализует тригонометрическое тождество tg(x) * cos(x) / sin(x) = 1,  
+	/// где угол X задается параметром в радианах <paramref name="a"/>. 
+	/// Результатом функции является целое число X - результат умножения левой части тождества само на себя столько раз,
+	/// сколько задано параметром <paramref name="count"/>.
+	/// </summary>
+	/// <param name="a">Угол в радианах</param>
+	/// <returns>1</returns>
+
+	[Export(typeof(IFunction))]
+	[ExportMetadata("FuncName", "tg(x) * cos(x) / sin(x) = 1")]
+	[ExportMetadata("EquivalentArithmeticExpr", "1")]
+	public class TgSinCosTo1 : IFunction
+	{
+		public double Body(IEnumerable<double> args)
+		{
+			double angle = args.ElementAt(0);
+
+			return Math.Tan(angle) * Math.Cos(angle) / Math.Sin(angle);
+		}
+
+		public string Function { get; private set; } = @"(angle) => 
+        {
+			return Math.Tan(angle) * Math.Cos(angle) / Math.Sin(angle);
+        }";
+
+		public ArgumentDescription[] Arguments { get; private set; } =
+			new ArgumentDescription[] { new ArgumentDescription(typeof(double), false) };
+	}
+
     /// <summary>
     /// Реализует 86.​ f(x) = th(2x) – (2*th(x))/( 1 + th(x)*th(x))
     /// </summary>
@@ -129,6 +160,53 @@ namespace OpaqueFunctions
 
 
 
+	/// <summary>
+	/// Реализует нахождение логарифмической функции f(x)=ln(1+x),  
+	/// где число x задается параметром, удовлетворяющим области определения <paramref name="x"/>. 
+	/// Результатом функции является число F , вычисляющее логарифм, используя ряд тейлора,
+	/// количество итераций задано параметром <paramref name="count"/>.
+	///  Обратной к этой функции является функция E^(f(x))=(1+x).
+	/// На самом деле область определения (-1, 1),так как в указаном условии (-1, 2) промежутке
+	/// после х=1 погрешность резко возрастает.
+	/// </summary>
+	/// <param name="x">число, удовлетворяющее области определения</param>
+	/// <param name="count">Количество требуемых итераций</param>
 
+	[Export(typeof(IFunction))]
+	[ExportMetadata("FuncName", "ln(x)")]
+	[ExportMetadata("EquivalentArithmeticExpr", "Math.Log(xyz123)")]
+	public class СMath_9_2_ln : IFunction
+	{
+		public double Body(IEnumerable<double> args)
+		{
+			double x = args.ElementAt(0) - 1;
+			double count = args.ElementAt(1);
+			double F = 0, X = x * x;
 
+			for (int i = 1; i < count; i++)
+			{
+				F = X / (i * (i + 1)) + F;
+				X = -X * x;
+			}
+			F = (x + F) / (x + 1);
+			return F;
+		}
+
+		public string Function { get; private set; } = @"(x, count) => 
+        {
+			double F = 0, X = x * x;
+
+			for (int i = 1; i < count; i++)
+			{
+				F = X / (i * (i + 1)) + F;
+				X = -X * x;
+			}
+			F = (x + F) / (x + 1);
+			return F;
+        }";
+
+		public ArgumentDescription[] Arguments { get; private set; } =
+			new ArgumentDescription[] { new ArgumentDescription(typeof(double), true),
+										new ArgumentDescription(typeof(int), false, 1) };
+	}
 }

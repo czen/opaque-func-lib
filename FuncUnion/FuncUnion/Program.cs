@@ -22,6 +22,7 @@ namespace OpaqueFunctions
         void Run()
         {
             inline = new InliningManager();
+			inline.Compose();
             inline.Test();
 
             Console.ReadKey();

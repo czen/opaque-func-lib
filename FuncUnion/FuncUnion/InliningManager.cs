@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,23 +29,90 @@ namespace OpaqueFunctions
         // Min value when generating
         // TODO: Make it a property, enable to change
         int minValue = -100;
-        ////////////////////////////////
+		////////////////////////////////
 
         public void Compose()
         {
             AssemblyCatalog catalog = new AssemblyCatalog(System.Reflection.Assembly.GetExecutingAssembly());
             CompositionContainer container = new CompositionContainer(catalog);
-            container.SatisfyImportsOnce(this);
+			container.SatisfyImportsOnce(this);
         }
 
-        IFunction FindEquivalentFunction(CSharpSyntaxNode node)
-        {
-            throw new NotImplementedException();
+        IFunction FindEquivalentFunction(LiteralExpressionSyntax node)
+		{
+			const double eps = 0.00001;
+			ArrayList funcArr = new ArrayList();
+
+			foreach (var func in opaqueFunctions)
+			{
+				double nodeValue = 0;
+				double metaValue = 0;
+				double.TryParse(node.Token.Text.Replace('.', ','), out nodeValue);
+				double.TryParse(func.Metadata.EquivalentArithmeticExpr.Replace('.', ','), out metaValue);
+
+				if (Math.Abs(metaValue - nodeValue) < eps)
+					funcArr.Add(func.Value);
+			}
+
+			if (funcArr.Count == 0)
+				return null;
+
+			Random rand = new Random();
+			int funcIndex = rand.Next(0, funcArr.Count);
+
+			return (IFunction)funcArr[funcIndex];
         }
+
+		IFunction FindEquivalentFunction(InvocationExpressionSyntax node)
+		{
+			ArrayList funcArr = new ArrayList();
+			foreach (var func in opaqueFunctions)
+			{
+				// Here we should do something with argument
+				string funcStr = getAnalizedFunction(func.Metadata.EquivalentArithmeticExpr);
+				string nodeStr = getAnalizedFunction(node.ToString());
+
+				if (funcStr == nodeStr)
+				{
+					funcArr.Add(func.Value);
+				}
+			}
+
+			if (funcArr.Count == 0)
+				return null;
+
+			Random rand = new Random();
+			int funcIndex = rand.Next(0, funcArr.Count);
+
+			return (IFunction)funcArr[funcIndex];
+		}
+
+		// Simplest realization, we suggest that argument is only single number or variable
+		string getAnalizedFunction(string func)
+		{
+			if (func == "1" || func == "0") return null;
+			int cutFirstIndex = -1;
+			int cutLastIndex = -1;
+
+			for (var i = 0; i < func.Length; ++i)
+			{
+				if (func[i] == '(')
+				{
+					cutFirstIndex = i;
+				}
+
+				if (func[i] == ')')
+				{
+					cutLastIndex = i;
+				}
+			}
+
+			return func.Substring(0, cutFirstIndex + 1) + func.Substring(cutLastIndex, 1);
+		}
 
         public void Test()
         {
-            SyntaxTree n = CSharpSyntaxTree.ParseText(@"1.0 + Math.Cos(2)", parseOptions);
+			SyntaxTree n = CSharpSyntaxTree.ParseText(@"1.0 + Math.Log(1) + Math.Cos(1)", parseOptions);
             SyntaxNode result = this.Visit(n.GetRoot());
 
             Console.WriteLine("Result: ");
@@ -71,8 +139,10 @@ namespace OpaqueFunctions
             foreach (var arg in func.Arguments)
             {
                 types.Add(arg.ArgType.ToString());
-                if (arg.IsInput)
-                    arguments.Add(args[usedArg++]);
+				if (arg.IsInput)
+				{
+					arguments.Add(args[usedArg++]);
+				}
                 else
                 {
                     int min = arg.MinValue ?? minValue;
@@ -80,7 +150,7 @@ namespace OpaqueFunctions
                     arguments.Add(Convert.ChangeType(val, arg.ArgType).ToString().Replace(',','.'));
                 }
             }
-            
+
             return string.Format("(((Func<{0}, double>)({1}))({2}))", 
                 string.Join(",", types), 
                 func.Function, 
@@ -96,7 +166,7 @@ namespace OpaqueFunctions
         {
             return this.Visit(node);
         }
-        /*
+		/*
         public override SyntaxNode VisitBaseExpression(BaseExpressionSyntax node)
         {
             Console.WriteLine("Base expression");
@@ -118,30 +188,25 @@ namespace OpaqueFunctions
             return base.VisitExpressionStatement(node);
         }*/
 
-        public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
-        {
-            Console.WriteLine("Invocation");
-            Console.WriteLine(node.ToString());
-            string methodName = (node.Expression as MemberAccessExpressionSyntax)?.ToString();
-            // TODO
-            // Analyze methodName
-            // Replace with appropriate opaque function 
-            return base.VisitInvocationExpression(node);
+		public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
+		{
+			//Console.WriteLine("Invocation");
+			//Console.WriteLine(node.ToString());
+			//string methodName = (node.Expression as MemberAccessExpressionSyntax)?.ToString();
+
+			string argument = "" + node.ArgumentList.ToString().ElementAt(1);
+			string[] resArr = { argument };
+			IFunction resFunc = FindEquivalentFunction(node);
+
+			return resFunc != null
+				? getFunctionNode(resFunc, resArr) // base.VisitInvocationExpression(node) 
+				: node; //base.VisitInvocationExpression(node);
         }
 
         public override SyntaxNode VisitLiteralExpression(LiteralExpressionSyntax node)
         {
-            Console.WriteLine("VisitLiteralExpression");
-            Console.WriteLine(node.ToString());
-            SyntaxNode n = node;
-
-            double value;
-            // TODO
-            // Find appropriate function to replace this literal
-            if (double.TryParse(node.Token.Text.Replace('.', ','), out value) && value == 1)
-                n = getFunctionNode(new TrigonometricIdentity());
-            
-            return n;
+			IFunction resFunc = FindEquivalentFunction(node);
+			return resFunc != null ? getFunctionNode(resFunc) : (SyntaxNode)node;
         }
                
 
