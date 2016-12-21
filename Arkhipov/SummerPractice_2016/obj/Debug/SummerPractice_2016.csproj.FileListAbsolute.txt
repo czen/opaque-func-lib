@@ -11,3 +11,6 @@ F:\SummerPractice_2016\SummerPractice_2016\bin\Debug\ModuleTests.dll
 F:\SummerPractice_2016\SummerPractice_2016\bin\Debug\OpaqueFunctions.dll
 F:\SummerPractice_2016\SummerPractice_2016\bin\Debug\ModuleTests.pdb
 F:\SummerPractice_2016\SummerPractice_2016\bin\Debug\OpaqueFunctions.pdb
+I:\School\program transformation\opaque-func-lib\Arkhipov\SummerPractice_2016\bin\Debug\SummerPractice_2016.exe.config
+I:\School\program transformation\opaque-func-lib\Arkhipov\SummerPractice_2016\obj\Debug\SummerPractice_2016.exe
+I:\School\program transformation\opaque-func-lib\Arkhipov\SummerPractice_2016\obj\Debug\SummerPractice_2016.pdb

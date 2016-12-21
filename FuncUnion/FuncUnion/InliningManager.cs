@@ -17,19 +17,26 @@ namespace OpaqueFunctions
     {
         [ImportMany(typeof(IFunction))]
         IEnumerable<Lazy<IFunction, IMetaData>> opaqueFunctions;
-        CSharpParseOptions parseOptions = new CSharpParseOptions(LanguageVersion.CSharp6, DocumentationMode.Parse, SourceCodeKind.Script);
 
-        // Random argument generation //
-        // Random generator
-        // TODO: Enable custom seeds
+        Dictionary<string, ExpressionSyntax> funcNodes = new Dictionary<string, ExpressionSyntax>();
+        const double eps = 0.00001;
+
+
         Random rnd = new Random();
         // Max value when generating
-        // TODO: Make it a property, enable to change
-        int maxValue = 100;
+        public int MaxGeneratorValue  = 100;
         // Min value when generating
-        // TODO: Make it a property, enable to change
-        int minValue = -100;
-		////////////////////////////////
+        public int MinGeneratorValue = -100;
+
+        public void SetRandomSeed(int seed)
+        {
+            rnd = new Random(seed);
+        }
+
+        public void ResetSeed()
+        {
+            rnd = new Random();
+        }
 
         public void Compose()
         {
@@ -37,183 +44,137 @@ namespace OpaqueFunctions
             CompositionContainer container = new CompositionContainer(catalog);
 			container.SatisfyImportsOnce(this);
         }
+        
+        public string InlineOpaqueFunctions(string program, SourceCodeKind kind = SourceCodeKind.Script)
+        {
+            return this.Visit(CSharpSyntaxTree.ParseText(program, new CSharpParseOptions(LanguageVersion.CSharp6, DocumentationMode.Parse, kind)).GetRoot()).ToFullString();
+        }
+
 
         IFunction FindEquivalentFunction(LiteralExpressionSyntax node)
 		{
-			const double eps = 0.00001;
-			ArrayList funcArr = new ArrayList();
 
-			foreach (var func in opaqueFunctions)
-			{
-				double nodeValue = 0;
-				double metaValue = 0;
-				double.TryParse(node.Token.Text.Replace('.', ','), out nodeValue);
-				double.TryParse(func.Metadata.EquivalentArithmeticExpr.Replace('.', ','), out metaValue);
+            double nodeValue = 0;
+            if (!double.TryParse(node.Token.Text.Replace('.', ','), out nodeValue))
+                return null;
 
-				if (Math.Abs(metaValue - nodeValue) < eps)
-					funcArr.Add(func.Value);
-			}
-
-			if (funcArr.Count == 0)
-				return null;
-
-			Random rand = new Random();
-			int funcIndex = rand.Next(0, funcArr.Count);
-
-			return (IFunction)funcArr[funcIndex];
+            double metaValue = 0;
+            List<IFunction> funcArr = 
+                opaqueFunctions.Where(func => 
+                    double.TryParse(func.Metadata.EquivalentArithmeticExpr.Replace('.', ','), out metaValue)
+                && Math.Abs(metaValue - nodeValue) < eps).Select(func => func.Value).ToList();
+            
+			return funcArr.Count == 0 ? null : funcArr[rnd.Next(0, funcArr.Count - 1)];
         }
 
-		IFunction FindEquivalentFunction(InvocationExpressionSyntax node)
+        IFunction FindEquivalentFunction(InvocationExpressionSyntax node, ArgumentListSyntax args)
+        {
+            string nodeStr = getAnalyzedFunction(node.ToString());
+            List<IFunction> funcArr = opaqueFunctions
+                .Where(func => getAnalyzedFunction(func.Metadata.EquivalentArithmeticExpr) == nodeStr)
+                .Select(func => func.Value).ToList();
+
+            funcArr = funcArr.Where(f => checkArgs(f, args)).ToList();
+
+
+            return funcArr.Count == 0 ? null : funcArr[rnd.Next(0, funcArr.Count - 1)];
+        }
+
+        bool checkArgs(IFunction func, ArgumentListSyntax args)
+        {
+            List<ArgumentSyntax> argsList = args.Arguments.ToList();
+            List<ArgumentDescription> inputArgs = func.Arguments.Where(a => a.IsInput).ToList();
+            if (inputArgs.Count != argsList.Count)
+                return false;
+            double val;
+            for(int i = 0; i < inputArgs.Count; ++i)
+                if (inputArgs[i].MinValue == null && inputArgs[i].MaxValue == null)
+                    continue;
+                else if (!double.TryParse(argsList[i].ToString().Replace('.', ','), out val) ||
+                    (inputArgs[i].MinValue != null && val < inputArgs[i].MinValue) ||
+                    (inputArgs[i].MaxValue != null && val > inputArgs[i].MaxValue))
+                    return false;
+            
+            return true;
+        }
+
+		string getAnalyzedFunction(string func)
 		{
-			ArrayList funcArr = new ArrayList();
-			foreach (var func in opaqueFunctions)
-			{
-				// Here we should do something with argument
-				string funcStr = getAnalizedFunction(func.Metadata.EquivalentArithmeticExpr);
-				string nodeStr = getAnalizedFunction(node.ToString());
-
-				if (funcStr == nodeStr)
-				{
-					funcArr.Add(func.Value);
-				}
-			}
-
-			if (funcArr.Count == 0)
-				return null;
-
-			Random rand = new Random();
-			int funcIndex = rand.Next(0, funcArr.Count);
-
-			return (IFunction)funcArr[funcIndex];
+			return string.Concat(func.TakeWhile(c => c != '('));
 		}
 
-		// Simplest realization, we suggest that argument is only single number or variable
-		string getAnalizedFunction(string func)
-		{
-			if (func == "1" || func == "0") return null;
-			int cutFirstIndex = -1;
-			int cutLastIndex = -1;
-
-			for (var i = 0; i < func.Length; ++i)
-			{
-				if (func[i] == '(')
-				{
-					cutFirstIndex = i;
-				}
-
-				if (func[i] == ')')
-				{
-					cutLastIndex = i;
-				}
-			}
-
-			return func.Substring(0, cutFirstIndex + 1) + func.Substring(cutLastIndex, 1);
-		}
-
-        public void Test()
+        private string prepareFunction(IFunction func)
         {
-			SyntaxTree n = CSharpSyntaxTree.ParseText(@"1.0 + Math.Log(1) + Math.Cos(1)", parseOptions);
-            SyntaxNode result = this.Visit(n.GetRoot());
-
-            Console.WriteLine("Result: ");
-            Console.WriteLine(result.ToString());
-
-            double res1 = 1.0 + Math.Cos(2);
-
-            double res2 = (((Func<System.Double, System.Int32, double>)((angle, count) =>
-             {
-                 double X = 1;
-                 for (int i = 0; i < count; i++)
-                     X *= Math.Sin(angle) * Math.Sin(angle) + Math.Cos(angle) * Math.Cos(angle);
-                 return X;
-             }))(56.2745029834446, 55)) + Math.Cos(2);
-
-            Console.WriteLine(string.Format("Initial result: {0}, new result: {1}", res1, res2));
+            return string.Format("((Func<{0}, double>)({1}))",
+                string.Join(",", func.Arguments.Select(arg => arg.ArgType.ToString())),
+                func.Function);
         }
 
-        private string prepareFunction(IFunction func, params string[] args)
+        private ExpressionSyntax getFunctionNode(IFunction func)
         {
-            List<string> arguments = new List<string>();
-            List<string> types = new List<string>();
-            int usedArg = 0;
-            foreach (var arg in func.Arguments)
-            {
-                types.Add(arg.ArgType.ToString());
-				if (arg.IsInput)
-				{
-					arguments.Add(args[usedArg++]);
-				}
-                else
-                {
-                    int min = arg.MinValue ?? minValue;
-                    double val = min + rnd.NextDouble() * (arg.MaxValue ?? maxValue - min);
-                    arguments.Add(Convert.ChangeType(val, arg.ArgType).ToString().Replace(',','.'));
-                }
-            }
-
-            return string.Format("(((Func<{0}, double>)({1}))({2}))", 
-                string.Join(",", types), 
-                func.Function, 
-                string.Join(",", arguments));
-        }
-
-        private SyntaxNode getFunctionNode(IFunction func, params string[] args)
-        {
-            return CSharpSyntaxTree.ParseText(prepareFunction(func, args), parseOptions).GetRoot().DescendantNodes(s => !(s is ExpressionSyntax)).LastOrDefault();
-        }
-
-        public SyntaxNode ReplaceWithOpaque(SyntaxNode node)
-        {
-            return this.Visit(node);
-        }
-		/*
-        public override SyntaxNode VisitBaseExpression(BaseExpressionSyntax node)
-        {
-            Console.WriteLine("Base expression");
-            Console.WriteLine(node.ToString());
-            return base.VisitBaseExpression(node);
+            if (!funcNodes.ContainsKey(func.Function))
+                funcNodes[func.Function] = SyntaxFactory.ParseExpression(prepareFunction(func));
+            return funcNodes[func.Function];
         }
         
-        public override SyntaxNode VisitBinaryExpression(BinaryExpressionSyntax node)
+        private string generateArgumentsString(IFunction func)
         {
-            Console.WriteLine("Binary expression");
-            Console.WriteLine(node.ToString());
-            return base.VisitBinaryExpression(node);
+            List<string> arguments = new List<string>();
+            foreach (var arg in func.Arguments)
+                if (!arg.IsInput)
+                {
+                    double min = arg.MinValue ?? MinGeneratorValue;
+                    double val = min + rnd.NextDouble() * (arg.MaxValue ?? MaxGeneratorValue - min);
+                    arguments.Add(Convert.ChangeType(val, arg.ArgType).ToString().Replace(',', '.'));
+                }
+
+            return string.Join(",", arguments);
         }
 
-        public override SyntaxNode VisitExpressionStatement(ExpressionStatementSyntax node)
+        private ArgumentListSyntax generateArguments(IFunction func, ArgumentListSyntax args = null)
         {
-            Console.WriteLine("Expression");
-            Console.WriteLine(node.ToString());
-            return base.VisitExpressionStatement(node);
-        }*/
-
-		public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
+            List<ArgumentSyntax> inputArgs = args?.Arguments.ToList();
+            List<ArgumentSyntax> genArguments = SyntaxFactory.ParseArgumentList(generateArgumentsString(func)).Arguments.ToList();
+            List<ArgumentSyntax> result = new List<ArgumentSyntax>();
+            int inputIndex = 0;
+            int genIndex = 0;
+            foreach (var arg in func.Arguments)
+                if (arg.IsInput)
+                    result.Add(inputArgs[inputIndex++]);
+                else
+                    result.Add(genArguments[genIndex++]);
+            return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(result));
+        }
+        
+        private InvocationExpressionSyntax getFunctionInvocationNode(IFunction func, ArgumentListSyntax args = null)
+        {
+            return SyntaxFactory.InvocationExpression(getFunctionNode(func), generateArguments(func, args));
+        }
+        
+        #region VisitMethods
+        public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
 		{
-			//Console.WriteLine("Invocation");
-			//Console.WriteLine(node.ToString());
-			//string methodName = (node.Expression as MemberAccessExpressionSyntax)?.ToString();
-
-			string argument = "" + node.ArgumentList.ToString().ElementAt(1);
-			string[] resArr = { argument };
-			IFunction resFunc = FindEquivalentFunction(node);
-
-			return resFunc != null
-				? getFunctionNode(resFunc, resArr) // base.VisitInvocationExpression(node) 
-				: node; //base.VisitInvocationExpression(node);
+			IFunction resFunc = FindEquivalentFunction(node, node.ArgumentList);
+            
+            return resFunc != null
+				? getFunctionInvocationNode(resFunc, (base.VisitArgumentList(node.ArgumentList) as ArgumentListSyntax)) // base.VisitInvocationExpression(node) 
+				: base.VisitInvocationExpression(node);
         }
 
         public override SyntaxNode VisitLiteralExpression(LiteralExpressionSyntax node)
         {
 			IFunction resFunc = FindEquivalentFunction(node);
-			return resFunc != null ? getFunctionNode(resFunc) : (SyntaxNode)node;
+            
+            return resFunc != null
+                ? getFunctionInvocationNode(resFunc) // base.VisitInvocationExpression(node) 
+                : base.VisitLiteralExpression(node);
         }
-               
 
         public override SyntaxNode Visit(SyntaxNode node)
         {
             return base.Visit(node);
         }
+        #endregion
     }
-    
+
 }

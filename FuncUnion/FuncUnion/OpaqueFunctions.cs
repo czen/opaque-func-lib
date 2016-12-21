@@ -266,8 +266,8 @@ namespace OpaqueFunctions
         }";
 
         public ArgumentDescription[] Arguments { get; private set; } =
-            new ArgumentDescription[] { new ArgumentDescription(typeof(double), false),
-                                        new ArgumentDescription(typeof(double), false) };
+            new ArgumentDescription[] { new ArgumentDescription(typeof(double), false, -10, 10),
+                                        new ArgumentDescription(typeof(double), false, -10, 10) };
     }
 
 
@@ -280,6 +280,9 @@ namespace OpaqueFunctions
 	///  Обратной к этой функции является функция E^(f(x))=(1+x).
 	/// На самом деле область определения (-1, 1),так как в указаном условии (-1, 2) промежутке
 	/// после х=1 погрешность резко возрастает.
+    /// ПРИМЕЧАНИЕ:
+    /// Вместо исходная функции ln(1+x) реализует ln(x), отнимая 1 от x перед началом вычисления. 
+    /// Изменение было сделано в целях упрощения поиска этой функции в процессе инлайнинга.
 	/// </summary>
 	/// <param name="x">число, удовлетворяющее области определения</param>
 	/// <param name="count">Количество требуемых итераций</param>
@@ -293,33 +296,34 @@ namespace OpaqueFunctions
 		{
 			double x = args.ElementAt(0) - 1;
 			double count = args.ElementAt(1);
-			double F = 0, X = x * x;
+            double F = 0, X = x * x;
 
-			for (int i = 1; i < count; i++)
-			{
-				F = X / (i * (i + 1)) + F;
-				X = -X * x;
-			}
-			F = (x + F) / (x + 1);
-			return F;
-		}
+            for (int i = 1; i < count; i++)
+            {
+                F = X / (i * (i + 1)) + F;
+                X = -X * x;
+            }
+            F = (x + F) / (x + 1);
+            return F;
+        }
 
 		public string Function { get; private set; } = @"(x, count) => 
         {
+            x -= 1;
 			double F = 0, X = x * x;
 
-			for (int i = 1; i < count; i++)
-			{
-				F = X / (i * (i + 1)) + F;
-				X = -X * x;
-			}
-			F = (x + F) / (x + 1);
-			return F;
+            for (int i = 1; i < count; i++)
+            {
+                F = X / (i * (i + 1)) + F;
+                X = -X * x;
+            }
+            F = (x + F) / (x + 1);
+            return F;
         }";
 
 		public ArgumentDescription[] Arguments { get; private set; } =
-			new ArgumentDescription[] { new ArgumentDescription(typeof(double), true),
-										new ArgumentDescription(typeof(int), false, 1) };
+			new ArgumentDescription[] { new ArgumentDescription(typeof(double), true, 0, 2),
+										new ArgumentDescription(typeof(int), false, 200) };
 	}
 
 	/// <summary>
@@ -332,8 +336,8 @@ namespace OpaqueFunctions
 
 	[Export(typeof(IFunction))]
 	[ExportMetadata("FuncName", "tg(arctg(x))")]
-	[ExportMetadata("EquivalentArithmeticExpr", "Math.Tan(Math.Atan(x))")]
-	public class CLOX_3_1_tg_arctg
+	[ExportMetadata("EquivalentArithmeticExpr", "x")]
+	public class CLOX_3_1_tg_arctg : IFunction
 	{
 		public double Body(IEnumerable<double> args)
 		{
@@ -345,7 +349,7 @@ namespace OpaqueFunctions
 			return F;
 		}
 
-		public string Function { get; private set; } = @"(angle, count) => 
+		public string Function { get; private set; } = @"(angle) => 
         {
 			double F = 1;
 			double Y1;
@@ -355,6 +359,46 @@ namespace OpaqueFunctions
         }";
 
 		public ArgumentDescription[] Arguments { get; private set; } =
-			new ArgumentDescription[] { new ArgumentDescription(typeof(double), false) };
+			new ArgumentDescription[] { new ArgumentDescription(typeof(double), true, -Math.PI * 0.5, Math.PI * 0.5) };
 	}
+
+    /// <summary>
+    /// Реализует 107.​ f(x) = a^x – e^(x*ln(a))
+    /// </summary>
+    /// <param name="arg">Аргумент X</param>
+    /// <param name="param">Необязательный параметр А</param>
+    /// <returns>0</returns>
+    /// 
+	[Export(typeof(IFunction))]
+    [ExportMetadata("FuncName", "f(x) = a^x – e^(x*ln(a))")]
+    [ExportMetadata("EquivalentArithmeticExpr", "0")]
+    public class CL00_107_2_pow_exp : IFunction
+    {
+        public static double L00_107_2_pow_exp(double arg, double param = 10.0)
+        {
+            double X, aX, ln, exp;
+            ln = Math.Log(param);
+            exp = Math.Exp(arg * ln);
+            aX = Math.Pow(param, arg);
+
+            X = aX - exp;
+            return X;
+        }
+
+        public string Function { get; private set; } = @"(arg, param)=>
+        {
+            double X, aX, ln, exp;
+            ln = Math.Log(param);
+            exp = Math.Exp(arg * ln);
+            aX = Math.Pow(param, arg);
+
+            X = aX - exp;
+            return X;
+        }";
+
+        public ArgumentDescription[] Arguments { get; private set; } =
+            new ArgumentDescription[] { new ArgumentDescription(typeof(double), false),
+                                        new ArgumentDescription(typeof(double), false, 0, 1)};
+
+    }
 }

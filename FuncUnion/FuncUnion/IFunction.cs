@@ -8,8 +8,6 @@ namespace OpaqueFunctions
 {
     interface IFunction
     {
-        //double Body(IEnumerable<double> args);
-        
         string Function { get; } 
 
         ArgumentDescription[] Arguments { get; }
@@ -18,12 +16,12 @@ namespace OpaqueFunctions
 
     public class ArgumentDescription
     {
-        public int? MinValue = null;
-        public int? MaxValue = null;
+        public double? MinValue = null;
+        public double? MaxValue = null;
         public Type ArgType;
         public bool IsInput = false;
 
-        public ArgumentDescription(Type argType, bool isInput = false, int? minValue = null, int? maxValue = null)
+        public ArgumentDescription(Type argType, bool isInput = false, double? minValue = null, double? maxValue = null)
         {
             ArgType = argType;
             MinValue = minValue;
